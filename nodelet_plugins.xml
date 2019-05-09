@@ -1,0 +1,5 @@
+<library path="lib/libnnabla_vision_detection">
+    <class name="nnabla_vision_detection/nnabla_vision_detection" type="nnabla_vision_detection::NnablaVisionDetectionNodelet" base_class_type="nodelet::Nodelet">
+        <description>Nodelet for image detection using nnabla</description>
+    </class>
+</library>

@@ -1,0 +1,6 @@
+<launch>
+  <arg name="node_name" default="nnabla_vision_detection" />
+  
+  <node name="$(arg node_name)" pkg="nnabla_vision_detection" type="nnabla_vision_detection">
+  </node>
+</launch>

@@ -4,7 +4,7 @@
   <version>0.0.0</version>
   <description>The nnabla_vision_detection package</description>
 
-  <maintainer email="masaya@todo.todo">masaya</maintainer>
+  <maintainer email="ms.kataoka@gmail.com">Masaya Kataoka</maintainer>
 
   <license>Apache v2</license>
 
@@ -14,21 +14,26 @@
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>vision_msgs</build_depend>
+  <build_depend>nodelet</build_depend>
+  <build_depend>pluginlib</build_depend>
   <build_export_depend>cv_bridge</build_export_depend>
   <build_export_depend>image_transport</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>vision_msgs</build_export_depend>
+  <build_export_depend>nodelet</build_export_depend>
+  <build_export_depend>pluginlib</build_export_depend>
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>image_transport</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>vision_msgs</exec_depend>
+  <exec_depend>nodelet</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
-
+    <nodelet plugin="${prefix}/nodelet_plugins.xml"/>
   </export>
 </package>
