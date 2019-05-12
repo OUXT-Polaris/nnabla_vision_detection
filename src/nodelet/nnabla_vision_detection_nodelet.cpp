@@ -3,6 +3,7 @@
 
 // Headers in ROS
 #include <ros/ros.h>
+#include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <vision_msgs/Classification2D.h>
 #include <vision_msgs/VisionInfo.h>
@@ -10,12 +11,20 @@
 // Headers in STL
 #include <fstream>
 #include <map>
+#include <memory>
 
 // Headers in Boost
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+
+// Headers in CUDA
+#include <nbla_utils/nnp.hpp>
+#ifdef WITH_CUDA
+#include <nbla/cuda/cudnn/init.hpp>
+#include <nbla/cuda/init.hpp>
+#endif
 
 namespace nnabla_vision_detection
 {
@@ -28,6 +37,8 @@ namespace nnabla_vision_detection
                 it_ = boost::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(*nh_));
                 pnh_->param<std::string>("image_topic", image_topic_, "image_raw");
                 pnh_->param<std::string>("class_meta_file", class_meta_file_, "");
+                pnh_->param<std::string>("executor_name", executor_name_, "runtime");
+                pnh_->param<std::string>("nnp_file", nnp_file_, "");
                 ifs_.open(class_meta_file_);
                 if (ifs_.fail())
                 {
@@ -68,6 +79,7 @@ namespace nnabla_vision_detection
                 vision_info_msg.method = "nnabla_vision_detection";
                 vision_info_msg.database_location = pnh_->getNamespace() + "/class_meta_info";
                 vision_info_pub_.publish(vision_info_msg);
+                initNnabla();
                 onInitPostProcess();
                 return;
             }
@@ -88,6 +100,89 @@ namespace nnabla_vision_detection
             
             void imageCallback(const sensor_msgs::ImageConstPtr& msg)
             {
+                cv_bridge::CvImagePtr cv_ptr;
+                try
+                {
+                    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+                } catch (cv_bridge::Exception &e)
+                {
+                    NODELET_ERROR("cv_bridge exception: %s", e.what());
+                    return;
+                }
+                auto orig_size = cv_ptr->image.size();
+                nbla::CgVariablePtr x = executor_->get_data_variables().at(0).variable;
+                uint8_t *data = x->variable()->cast_data_and_get_pointer<uint8_t>(ctx_cpu_);
+                if(x->variable()->ndim() != 4)
+                {
+                    NODELET_ERROR_STREAM("x variable dimension does not match, dimension should be 4, dim:" << x->variable()->ndim());
+                    return;
+                }
+                auto inshape = x->variable()->shape();
+                const int C = inshape[1];
+                const int H = inshape[2];
+                const int W = inshape[3];
+                if(C != 3)
+                {
+                    NODELET_ERROR_STREAM("channel size does not match, channel size should be 3, channel size:" << C);
+                    return;
+                }
+                cv::Mat resized;
+                cv::resize(cv_ptr->image, resized, cv::Size{W, H});
+                for (int hw = 0; hw < H * W; ++hw)
+                {
+                    for (int c = 0; c < C; ++c)
+                    {
+                        data[c * H * W + hw] = resized.ptr()[hw * C + 2 - c];
+                    }
+                }
+                executor_->execute();
+                nbla::CgVariablePtr y = executor_->get_output_variables().at(0).variable;
+                const float *y_data = y->variable()->get_data_pointer<float>(ctx_cpu_);
+                if(y->variable()->ndim() != 3)
+                {
+                    NODELET_ERROR_STREAM("y variable dimension does not match, dimension should be 3, dim:" << y->variable()->ndim());
+                    return;
+                }
+                auto outshape = y->variable()->shape();
+                int num_classes = (int)classes_.size();
+                return;
+            }
+
+            void initNnabla()
+            {
+#ifdef WITH_CUDA
+                try
+                {
+                    nbla::init_cudnn();
+                }
+                catch(...)
+                {
+                    NODELET_ERROR_STREAM("failed to initialize cudnn");
+                    std::exit(-1);
+                }
+#endif
+                try
+                {
+                    nnp_ptr_ = std::make_shared<nbla::utils::nnp::Nnp>(ctx_);
+                    nnp_ptr_->add(nnp_file_);
+                }
+                catch(...)
+                {
+                    NODELET_ERROR_STREAM("failed to initialize nnabla utils");
+                    std::exit(-1);
+                }
+                try
+                {
+                    executor_ = nnp_ptr_->get_executor(executor_name_);
+                    executor_->set_batch_size(1);
+                }
+                catch(const std::exception& e)
+                {
+                    NODELET_ERROR_STREAM("failed to initialize nnabla executor");
+                    std::exit(-1);
+                }
+                
+
                 return;
             }
         private:
@@ -99,6 +194,16 @@ namespace nnabla_vision_detection
             std::string class_meta_file_;
             std::map<int,std::string> classes_;
             std::ifstream ifs_;
+            std::shared_ptr<nbla::utils::nnp::Executor> executor_;
+            std::string executor_name_;
+            std::string nnp_file_;
+            std::shared_ptr<nbla::utils::nnp::Nnp> nnp_ptr_;
+            nbla::Context ctx_cpu_{{"cpu:float"}, "CpuCachedArray", "0"};
+#ifdef WITH_CUDA
+            nbla::Context ctx_{{"cudnn:float", "cuda:float", "cpu:float"}, "CudaCachedArray", "0"};
+#else
+            nbla::Context ctx_{{"cpu:float"}, "CpuCachedArray", "0"};
+#endif
     };
 }
 
