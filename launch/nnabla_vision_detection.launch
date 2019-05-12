@@ -4,6 +4,7 @@
   <arg name="image_topic" default="image_raw" />
   <arg name="vision_info_topic" default="vision_info"/>
   <arg name="class_meta_file" default="$(find nnabla_vision_detection)/data/coco.xml"/>
+  <arg name="visualization" default="true"/>
 
   <node name="$(arg node_name)" pkg="nnabla_vision_detection" type="nnabla_vision_detection" respawn="$(arg respawn)" output="log">
     <param name="image_topic" value="$(arg image_topic)"/>
@@ -11,9 +12,11 @@
     <param name="class_meta_file" value="$(arg class_meta_file)"/>
   </node>
 
-  <node pkg="vision_msgs_visualization" type="detection_2d_visualizer_node" name="$(arg node_name)_visualizer" output="log" respawn="$(arg respawn)">
-    <param name="image_topic" value="$(arg image_topic)"/>
-    <param name="vision_info_topic" value="$(arg vision_info_topic)"/>
-    <param name="detection_topic" value="/$(arg node_name)/result"/>
-  </node>
+  <group if="$(arg visualization)">
+    <node pkg="vision_msgs_visualization" type="detection_2d_visualizer_node" name="$(arg node_name)_visualizer" output="log" respawn="$(arg respawn)">
+      <param name="image_topic" value="$(arg image_topic)"/>
+      <param name="vision_info_topic" value="$(arg vision_info_topic)"/>
+      <param name="detection_topic" value="/$(arg node_name)/result"/>
+    </node>
+  </group>
 </launch>
