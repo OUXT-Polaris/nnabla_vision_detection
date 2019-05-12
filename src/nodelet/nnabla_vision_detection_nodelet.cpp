@@ -5,7 +5,7 @@
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
-#include <vision_msgs/Classification2D.h>
+#include <vision_msgs/Detection2DArray.h>
 #include <vision_msgs/VisionInfo.h>
 
 // Headers in STL
@@ -79,6 +79,7 @@ namespace nnabla_vision_detection
                 vision_info_msg.method = "nnabla_vision_detection";
                 vision_info_msg.database_location = pnh_->getNamespace() + "/class_meta_info";
                 vision_info_pub_.publish(vision_info_msg);
+                result_pub_ = pnh_->advertise<vision_msgs::Detection2DArray>("result",1);
                 initNnabla();
                 onInitPostProcess();
                 return;
@@ -145,6 +146,48 @@ namespace nnabla_vision_detection
                 }
                 auto outshape = y->variable()->shape();
                 int num_classes = (int)classes_.size();
+                int num_c = 5 + num_classes;
+                vision_msgs::Detection2DArray detection_array;
+                detection_array.header = msg->header;
+                for (int b = 0; b < outshape[1]; ++b)
+                {
+                    float score = -1;
+                    int class_idx = 0;
+                    for (int k = 0; k < num_classes; ++k)
+                    {
+                        const float score_k = y_data[b * num_c + 5 + k];
+                        if (score_k > score)
+                        {
+                            class_idx = k;
+                            score = score_k;
+                        }
+                    }
+                    if (score <= 0)
+                    {
+                        continue;
+                    }
+                    const float x = y_data[b * num_c + 0];
+                    const float y = y_data[b * num_c + 1];
+                    const float w = y_data[b * num_c + 2];
+                    const float h = y_data[b * num_c + 3];
+                    const int x0 = transformCoord(x - w / 2, W);
+                    const int y0 = transformCoord(y - h / 2, H);
+                    const int x1 = transformCoord(x + w / 2, W);
+                    const int y1 = transformCoord(y + h / 2, H);
+                    std::string detected_class = classes_[class_idx];
+                    vision_msgs::Detection2D detection;
+                    detection.header = msg->header;
+                    detection.bbox.center.x = ((float)x0 + (float)x1)/2.0;
+                    detection.bbox.center.y = ((float)y0 + (float)y1)/2.0;
+                    detection.bbox.size_x = std::fabs((float)x1 - (float)x0);
+                    detection.bbox.size_y = std::fabs((float)y1 - (float)y0);
+                    vision_msgs::ObjectHypothesisWithPose hypothesis;
+                    hypothesis.score = score;
+                    hypothesis.id = class_idx;
+                    detection.results.push_back(hypothesis);
+                    detection_array.detections.push_back(detection);
+                }
+                result_pub_.publish(detection_array);
                 return;
             }
 
@@ -181,9 +224,12 @@ namespace nnabla_vision_detection
                     NODELET_ERROR_STREAM("failed to initialize nnabla executor");
                     std::exit(-1);
                 }
-                
-
                 return;
+            }
+
+            inline int transformCoord(float x, int size)
+            {
+                return std::max(0, std::min((int)(x*size), size-1));
             }
         private:
             boost::shared_ptr<image_transport::ImageTransport> it_;
