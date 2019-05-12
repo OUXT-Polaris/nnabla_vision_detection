@@ -38,6 +38,7 @@ namespace nnabla_vision_detection
                 pnh_->param<std::string>("image_topic", image_topic_, "image_raw");
                 pnh_->param<std::string>("class_meta_file", class_meta_file_, "");
                 pnh_->param<std::string>("executor_name", executor_name_, "runtime");
+                pnh_->param<std::string>("vision_info_topic", vision_info_topic_, "vision_info");
                 pnh_->param<std::string>("nnp_file", nnp_file_, "");
                 ifs_.open(class_meta_file_);
                 if (ifs_.fail())
@@ -73,7 +74,7 @@ namespace nnabla_vision_detection
                         }
                     }
                 }
-                vision_info_pub_ = pnh_->advertise<vision_msgs::VisionInfo>("vision_info",1,true);
+                vision_info_pub_ = pnh_->advertise<vision_msgs::VisionInfo>(vision_info_topic_,1,true);
                 vision_msgs::VisionInfo vision_info_msg;
                 vision_info_msg.header.stamp = ros::Time::now();
                 vision_info_msg.method = "nnabla_vision_detection";
@@ -237,6 +238,7 @@ namespace nnabla_vision_detection
             ros::Publisher result_pub_;
             ros::Publisher vision_info_pub_;
             std::string image_topic_;
+            std::string vision_info_topic_;
             std::string class_meta_file_;
             std::map<int,std::string> classes_;
             std::ifstream ifs_;

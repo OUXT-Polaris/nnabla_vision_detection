@@ -30,6 +30,7 @@
   <exec_depend>vision_msgs</exec_depend>
   <exec_depend>nodelet</exec_depend>
   <exec_depend>pluginlib</exec_depend>
+  <exec_depend>vision_msgs_visualization</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
