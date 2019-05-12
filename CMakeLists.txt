@@ -33,16 +33,29 @@ include_directories(
 )
 
 ## Macro
-macro(nnabla_vision_detection_add_nodelet node_name nodelet_cppfile)
-  set(NODE_NAME ${node_name})
-  set(NODELET_NAME nnabla_vision_detection/${node_name})
-  configure_file(src/node/standalone_nodelet_exec.cpp.in ${node_name}.cpp @ONLY)
-  add_executable(${node_name}_exe ${node_name}.cpp)
-  SET_TARGET_PROPERTIES(${node_name}_exe PROPERTIES OUTPUT_NAME ${node_name})
-  target_link_libraries(${node_name}_exe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-  list(APPEND _nnabla_vision_detection_nodelet_cppfiles ${nodelet_cppfile})
-  list(APPEND _nnabla_vision_detection_nodelet_targets ${node_name}_exe)
-endmacro()
+if(WITH_CUDA)
+  macro(nnabla_vision_detection_add_nodelet node_name nodelet_cppfile)
+    set(NODE_NAME ${node_name})
+    set(NODELET_NAME nnabla_vision_detection/${node_name})
+    configure_file(src/node/standalone_nodelet_exec.cpp.in ${node_name}.cpp @ONLY)
+    add_executable(${node_name}_exe ${node_name}.cpp)
+    SET_TARGET_PROPERTIES(${node_name}_exe PROPERTIES OUTPUT_NAME ${node_name})
+    target_link_libraries(${node_name}_exe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} nnabla nnabla_utils)
+    list(APPEND _nnabla_vision_detection_nodelet_cppfiles ${nodelet_cppfile})
+    list(APPEND _nnabla_vision_detection_nodelet_targets ${node_name}_exe)
+  endmacro()
+else()
+  macro(nnabla_vision_detection_add_nodelet node_name nodelet_cppfile)
+    set(NODE_NAME ${node_name})
+    set(NODELET_NAME nnabla_vision_detection/${node_name})
+    configure_file(src/node/standalone_nodelet_exec.cpp.in ${node_name}.cpp @ONLY)
+    add_executable(${node_name}_exe ${node_name}.cpp)
+    SET_TARGET_PROPERTIES(${node_name}_exe PROPERTIES OUTPUT_NAME ${node_name})
+    target_link_libraries(${node_name}_exe ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} nnabla nnabla_utils nnabla_cuda)
+    list(APPEND _nnabla_vision_detection_nodelet_cppfiles ${nodelet_cppfile})
+    list(APPEND _nnabla_vision_detection_nodelet_targets ${node_name}_exe)
+  endmacro()
+endif()
 
 ## Add Nodelet
 nnabla_vision_detection_add_nodelet(nnabla_vision_detection src/nodelet/nnabla_vision_detection_nodelet.cpp)
@@ -51,7 +64,12 @@ add_library(${PROJECT_NAME} SHARED
   src/nodelet/nodelet.cpp
   ${_nnabla_vision_detection_nodelet_cppfiles}
 )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+if(WITH_CUDA)
+  target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} nnabla nnabla_utils)
+else()
+  target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} nnabla nnabla_utils nnabla_cuda)
+endif()
 
 ## Install
 install(TARGETS ${PROJECT_NAME}
