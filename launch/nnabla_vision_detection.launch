@@ -1,9 +1,10 @@
 <launch>
+  <arg name="respawn" default="true"/>
   <arg name="node_name" default="nnabla_vision_detection" />
   <arg name="image_topic" default="image_raw" />
-  <arg name="class_meta_file" default="$(find nnabla_vision_detection)/data/coco.names"/>
+  <arg name="class_meta_file" default="$(find nnabla_vision_detection)/data/coco.xml"/>
 
-  <node name="$(arg node_name)" pkg="nnabla_vision_detection" type="nnabla_vision_detection">
+  <node name="$(arg node_name)" pkg="nnabla_vision_detection" type="nnabla_vision_detection" respawn="$(arg respawn)" output="log">
     <param name="image_topic" value="$(arg image_topic)"/>
     <param name="class_meta_file" value="$(arg class_meta_file)"/>
   </node>
