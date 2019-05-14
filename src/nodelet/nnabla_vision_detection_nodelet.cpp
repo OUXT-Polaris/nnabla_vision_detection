@@ -14,6 +14,7 @@
 #include <memory>
 
 // Headers in Boost
+#include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
@@ -40,6 +41,11 @@ namespace nnabla_vision_detection
                 pnh_->param<std::string>("executor_name", executor_name_, "runtime");
                 pnh_->param<std::string>("vision_info_topic", vision_info_topic_, "vision_info");
                 pnh_->param<std::string>("nnp_file", nnp_file_, "");
+                if(checkNnpFileExists())
+                {
+                    NODELET_ERROR_STREAM(".nnp file does not exist, please check path : " << nnp_file_);
+                    std::exit(-1);                    
+                }
                 ifs_.open(class_meta_file_);
                 if (ifs_.fail())
                 {
@@ -84,6 +90,20 @@ namespace nnabla_vision_detection
                 initNnabla();
                 onInitPostProcess();
                 return;
+            }
+
+            bool checkNnpFileExists()
+            {
+                boost::system::error_code error;
+                const bool result = boost::filesystem::exists(nnp_file_, error);
+                if (!result || error)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
             }
 
             void subscribe()  // NOLINT(modernize-use-override)
