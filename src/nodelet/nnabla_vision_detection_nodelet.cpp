@@ -198,6 +198,7 @@ namespace nnabla_vision_detection
                 try
                 {
                     nbla::init_cudnn();
+                    NODELET_INFO_STREAM("initialize cudnn finished");
                 }
                 catch(...)
                 {
@@ -210,9 +211,10 @@ namespace nnabla_vision_detection
                     nnp_ptr_ = std::make_shared<nbla::utils::nnp::Nnp>(ctx_);
                     nnp_ptr_->add(nnp_file_);
                 }
-                catch(...)
+                catch(const std::exception& e)
                 {
                     NODELET_ERROR_STREAM("failed to initialize nnabla utils");
+                    NODELET_ERROR_STREAM(e.what());
                     std::exit(-1);
                 }
                 try
@@ -223,6 +225,7 @@ namespace nnabla_vision_detection
                 catch(const std::exception& e)
                 {
                     NODELET_ERROR_STREAM("failed to initialize nnabla executor");
+                    NODELET_ERROR_STREAM(e.what());
                     std::exit(-1);
                 }
                 return;

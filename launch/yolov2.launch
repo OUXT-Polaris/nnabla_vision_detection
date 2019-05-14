@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find nnabla_vision_detection)/launch/nnabla_vision_detection.launch">
+        <arg name="nnp_file" default="$(find nnabla_vision_detection)/nnp/yolov2.nnp"/>
+    </include>
+</launch>
