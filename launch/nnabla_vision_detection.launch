@@ -2,7 +2,7 @@
   <arg name="respawn" default="true"/>
   <arg name="node_name" default="nnabla_vision_detection" />
   <arg name="image_topic" default="image_raw" />
-  <arg name="vision_info_topic" default="vision_info"/>
+  <arg name="vision_info_topic" default="$(arg node_name)/vision_info"/>
   <arg name="class_meta_file" default="$(find nnabla_vision_detection)/data/coco.xml"/>
   <arg name="nnp_file" default=""/>
   <arg name="visualization" default="true"/>
@@ -12,6 +12,7 @@
     <param name="vision_info_topic" value="$(arg vision_info_topic)"/>
     <param name="class_meta_file" value="$(arg class_meta_file)"/>
     <param name="nnp_file" value="$(arg nnp_file)"/>
+    <param name="always_subscribe" value="true"/>
   </node>
 
   <group if="$(arg visualization)">

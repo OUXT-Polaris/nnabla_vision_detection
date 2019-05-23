@@ -80,7 +80,7 @@ namespace nnabla_vision_detection
                         }
                     }
                 }
-                vision_info_pub_ = pnh_->advertise<vision_msgs::VisionInfo>(vision_info_topic_,1,true);
+                vision_info_pub_ = nh_->advertise<vision_msgs::VisionInfo>(vision_info_topic_,1,true);
                 vision_msgs::VisionInfo vision_info_msg;
                 vision_info_msg.header.stamp = ros::Time::now();
                 vision_info_msg.method = "nnabla_vision_detection";
@@ -98,11 +98,11 @@ namespace nnabla_vision_detection
                 const bool result = boost::filesystem::exists(nnp_file_, error);
                 if (!result || error)
                 {
-                    return false;
+                    return true;
                 }
                 else
                 {
-                    return true;
+                    return false;
                 }
             }
 

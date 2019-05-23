@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <launch>
+    <arg name="image_topic" default="image_raw" />
+
     <include file="$(find nnabla_vision_detection)/launch/nnabla_vision_detection.launch">
         <arg name="nnp_file" default="$(find nnabla_vision_detection)/nnp/yolov2.nnp"/>
+        <arg name="image_topic" default="$(arg image_topic)" />
     </include>
 </launch>
